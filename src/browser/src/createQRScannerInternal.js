@@ -1,4 +1,7 @@
-(function() {
+require('webrtc-adapter');
+var workerScript = require("raw!../worker.min.js");
+
+module.exports = function(){
 
   var ELEMENTS = {
     preview: 'cordova-plugin-qrscanner-video-preview',
@@ -17,6 +20,7 @@
   var scanWorker = null;
   var thisScanCycle = null;
   var nextScan = null;
+  var cancelNextScan = null;
 
   // standard screen widths/heights, from 4k down to 320x240
   // widths and heights are each tested separately to account for screen rotation
@@ -84,7 +88,7 @@
               return searchState;
             } else {
               searchState.nextConstraint = next;
-              return navigator.mediaDevices.getUserMedia(searchState.nextConstraint).then(function(mediaStream){
+              return window.navigator.mediaDevices.getUserMedia(searchState.nextConstraint).then(function(mediaStream){
                 // We found the first working constraint object, now we can stop
                 // the stream and short-circuit the search.
                 killStream(mediaStream);
@@ -125,7 +129,7 @@
   }
 
   function chooseCameras(){
-    var devices = navigator.mediaDevices.enumerateDevices();
+    var devices = window.navigator.mediaDevices.enumerateDevices();
     return devices.then(function(mediaDeviceInfoList){
       var videoDeviceIds = mediaDeviceInfoList.filter(function(elem){
         return elem.kind === 'videoinput';
@@ -215,13 +219,19 @@
   }
 
   function bringStillToFront(){
-    getImg().style.visibility = 'visible';
-    previewing = false;
+    var img = getImg();
+    if(img){
+      img.style.visibility = 'visible';
+      previewing = false;
+    }
   }
 
   function bringPreviewToFront(){
-    getImg().style.visibility = 'hidden';
-    previewing = true;
+    var img = getImg();
+    if(img){
+      img.style.visibility = 'hidden';
+      previewing = true;
+    }
   }
 
   function isInitialized(){
@@ -229,7 +239,7 @@
   }
 
   function canChangeCamera(){
-    return backCamera !== null && frontCamera !== null;
+    return !!backCamera && !!frontCamera;
   }
 
   function calcStatus(){
@@ -262,7 +272,7 @@
   function startCamera(success, error){
       var currentCameraIndex = getCurrentCameraIndex();
       var currentCamera = getCurrentCamera();
-      navigator.mediaDevices.getUserMedia({
+      window.navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
           deviceId: {exact: currentCamera.deviceId},
@@ -307,7 +317,8 @@
 
   function initialize(success, error){
     if(scanWorker === null){
-      scanWorker = new Worker('/plugins/cordova-plugin-qrscanner/src/browser/worker.js');
+      var workerBlob = new Blob([workerScript],{type: "text/javascript"});
+      scanWorker = new Worker(URL.createObjectURL(workerBlob));
     }
     if(!getVideoPreview()){
       // prepare DOM (sync)
@@ -418,15 +429,24 @@
         }
       };
       thisScanCycle = function(){
-        window.lastData = getCurrentImageData(video);
         scanWorker.postMessage(getCurrentImageData(video));
-        // avoid race conditions, always clear before starting a cycle
-        window.clearTimeout(nextScan);
+        if(cancelNextScan !== null){
+          // avoid race conditions, always clear before starting a cycle
+          cancelNextScan();
+        }
         // interval in milliseconds at which to try decoding the QR code
         var SCAN_INTERVAL = window.QRScanner_SCAN_INTERVAL || 130;
         // this value can be adjusted on-the-fly (while a scan is active) to
         // balance scan speed vs. CPU/power usage
         nextScan = window.setTimeout(thisScanCycle, SCAN_INTERVAL);
+        cancelNextScan = function(sendError){
+          window.clearTimeout(nextScan);
+          nextScan = null;
+          cancelNextScan = null;
+          if(sendError){
+            error(6); // SCAN_CANCELED
+          }
+        };
       };
       thisScanCycle();
     }, error);
@@ -434,25 +454,26 @@
 
   function cancelScan(success, error){
     error = null; // should never error
-    if(nextScan !== null){
-      window.clearTimeout(nextScan);
+    if(cancelNextScan !== null){
+      cancelNextScan(true);
     }
     scanning = false;
-    success(calcStatus());
+    if(typeof success === "function"){
+      success(calcStatus());
+    }
   }
 
   function pausePreview(success, error){
     error = null; // should never error
     if(mediaStreamIsActive()){
       // pause scanning too
-      if(nextScan !== null){
-        window.clearTimeout(nextScan);
+      if(cancelNextScan !== null){
+        cancelNextScan();
       }
       var video = getVideoPreview();
       video.pause();
       var img = new Image();
       img.src = captureCurrentFrame(video);
-      window.lastImage = img.src;
       getImg().style.backgroundImage = 'url(' + img.src + ')';
       bringStillToFront();
       // kill the active stream to turn off the privacy light (the screenshot
@@ -482,13 +503,22 @@
 
   function useCamera(success, error, array){
     var requestedCamera = array[0];
+    var initialized = isInitialized();
     if(requestedCamera !== currentCamera){
-      currentCamera = requestedCamera;
-      hide(function(status){
-        // Don't need this one
-        status = null;
-      });
-      show(success, error);
+      if(initialized && requestedCamera === 1 && !canChangeCamera()){
+          error(4); //FRONT_CAMERA_UNAVAILABLE
+      } else {
+        currentCamera = requestedCamera;
+        if(initialized){
+          hide(function(status){
+            // Don't need this one
+            status = null;
+          });
+          show(success, error);
+        } else {
+          success(calcStatus());
+        }
+      }
     } else {
       success(calcStatus());
     }
@@ -508,6 +538,7 @@
   // the application needs to force the plugin to chooseCameras() again.
   function destroy(success, error){
     error = null; // should never error
+    cancelScan();
     if(mediaStreamIsActive()){
       killActiveMediaStream();
     }
@@ -524,7 +555,7 @@
     success(calcStatus());
   }
 
-  module.exports = {
+  return {
       prepare: prepare,
       show: show,
       hide: hide,
@@ -539,7 +570,4 @@
       getStatus: getStatus,
       destroy: destroy
   };
-  
-  window.QRScanner = module.exports;
-  // require('cordova/exec/proxy').add('QRScanner', module.exports);
-})();
+};

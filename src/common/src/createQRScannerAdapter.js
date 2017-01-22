@@ -1,3 +1,4 @@
+module.exports = function createQRScanner(cordova){
 // The native implementations should return their status as ['string':'string']
 // dictionaries. Boolean values are encoded to '0' and '1', respectively.
 function stringToBool(string) {
@@ -48,6 +49,9 @@ function clearBackground() {
 }
 
 function errorCallback(callback) {
+  if (!callback) {
+    return null;
+  }
   return function(error) {
     var errorCode = parseInt(error);
     var QRScannerError = {};
@@ -149,7 +153,7 @@ function doneCallback(callback, clear) {
   };
 }
 
-var QRScanner = {
+return {
   prepare: function(callback) {
     cordova.exec(successCallback(callback), errorCallback(callback), 'QRScanner', 'prepare', []);
   },
@@ -219,5 +223,4 @@ var QRScanner = {
     cordova.exec(doneCallback(callback), null, 'QRScanner', 'getStatus', []);
   }
 };
-
-module.exports = QRScanner;
+};

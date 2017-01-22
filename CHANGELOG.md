@@ -1,5 +1,81 @@
+<a name="2.4.0"></a>
+# [2.4.0](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.3.4...2.4.0) (2016-10-06)
+
+## How to Upgrade
+
+If you installed a previous version of this plugin and manually added a block like the following to your `config.xml`:
+
+```xml
+<platform name="ios">
+    <hook type="before_build" src="plugins/cordova-plugin-qrscanner/scripts/swift-support.js" />
+    <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
+      <string>The camera is used to scan QR codes.</string>
+    </config-file>
+</platform>
+```
+
+you can simply delete the whole thing, it is no longer necessary. The iOS platform now installs itself completely, and no additional configuration is needed.
+
+### Features
+
+* **ios:** remove need for the swift-support hook, remove script ([dca1f7e](https://github.com/bitpay/cordova-plugin-qrscanner/commit/dca1f7e))
+
+
+
+<a name="2.3.4"></a>
+## [2.3.4](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.3.3...2.3.4) (2016-10-01)
+
+
+### Bug Fixes
+
+* **ios:** Make NSCameraUsageDescription string non-empty, which is now rejected by Apple ([514a2d2](https://github.com/bitpay/cordova-plugin-qrscanner/commit/514a2d2))
+* **ios:** pause scanning with pausePreview method on iOS ([c0722c7](https://github.com/bitpay/cordova-plugin-qrscanner/commit/c0722c7)), closes [#12](https://github.com/bitpay/cordova-plugin-qrscanner/issues/12)
+
+
+
+<a name="2.3.3"></a>
+## [2.3.3](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.3.2...2.3.3) (2016-09-29)
+
+
+### Bug Fixes
+
+* **browser:** make cancelScan call the current scan's callback with error code 6 ([d5ca673](https://github.com/bitpay/cordova-plugin-qrscanner/commit/d5ca673))
+* **library:** fixes an issue with optional callbacks being required ([99dc348](https://github.com/bitpay/cordova-plugin-qrscanner/commit/99dc348))
+
+
+
+<a name="2.3.2"></a>
+## [2.3.2](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.3.1...2.3.2) (2016-09-28)
+
+
+### Bug Fixes
+
+* **library:** rename UMD library file in dist ([a4b385f](https://github.com/bitpay/cordova-plugin-qrscanner/commit/a4b385f))
+
+
+
+<a name="2.3.1"></a>
+## [2.3.1](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.3.0...2.3.1) (2016-09-28)
+
+
+### Bug Fixes
+
+* **package:** remove install script ([b769bec](https://github.com/bitpay/cordova-plugin-qrscanner/commit/b769bec))
+
+
+
+<a name="2.3.0"></a>
+# [2.3.0](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.2.0...2.3.0) (2016-09-28)
+
+
+### Features
+
+* **all:** Add build process, release browser platform as a UMD library ([052b8d3](https://github.com/bitpay/cordova-plugin-qrscanner/commit/052b8d3)), closes [#30](https://github.com/bitpay/cordova-plugin-qrscanner/issues/30)
+
+
+
 <a name="2.2.0"></a>
-## [2.1.2](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.1.1...v2.1.2) (2016-08-15)
+## [2.1.2](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.1.1...2.1.2) (2016-08-15)
 
 
 ### Features
@@ -9,7 +85,7 @@
 
 
 <a name="2.1.1"></a>
-## [2.1.1](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.1.0...v2.1.1) (2016-08-12)
+## [2.1.1](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.1.0...2.1.1) (2016-08-12)
 
 
 ### Bug Fixes
@@ -19,7 +95,7 @@
 
 
 <a name="2.1.0"></a>
-# [2.1.0](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.0.1...v2.1.0) (2016-08-05)
+# [2.1.0](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.0.1...2.1.0) (2016-08-05)
 
 
 ### Bug Fixes
@@ -36,7 +112,7 @@
 
 
 <a name="2.0.1"></a>
-## [2.0.1](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.0.0...v2.0.1) (2016-08-03)
+## [2.0.1](https://github.com/bitpay/cordova-plugin-qrscanner/compare/2.0.0...2.0.1) (2016-08-03)
 
 
 ### Bug Fixes
@@ -46,7 +122,7 @@
 
 
 <a name="2.0.0"></a>
-# [2.0.0](https://github.com/bitpay/cordova-plugin-qrscanner/compare/v1.1.0...v2.0.0) (2016-06-29)
+# [2.0.0](https://github.com/bitpay/cordova-plugin-qrscanner/compare/v1.1.0...2.0.0) (2016-06-29)
 
 ### Bug Fixes
 

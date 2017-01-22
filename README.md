@@ -22,7 +22,7 @@ Last things is that I converted some of the JavaScript code to ES6 (be aware tho
 cordova plugin add cordova-plugin-qrscanner
 ```
 
-On most platforms, simply adding the plugin to the Cordova project will make the `window.QRScanner` global object available once the `deviceready` event propagates.
+Simply adding this plugin to the Cordova project will make the `window.QRScanner` global object available once the `deviceready` event propagates.
 
 ### Usage
 
@@ -55,7 +55,7 @@ function onDone(err, status){
   } else {
     // we didn't get permission, but we didn't get permanently denied. (On
     // Android, a denial isn't permanent unless the user checks the "Don't
-    // ask again" box. We can ask again at the next relevant opportunity.
+    // ask again" box.) We can ask again at the next relevant opportunity.
   }
 }
 ```
@@ -88,54 +88,26 @@ QRScanner.show();
 
 Please see the [full API docs](#api) for details about each method, [error handling](#error-handling), and [platform specific details](#platform-specific-details).
 
-### iOS Installation
+### Electron or NW.js usage without `cordova-browser`
 
-This plugin requires some additional installation steps for the iOS platform.
+If your app uses the Cordova Browser platform, simply adding the plugin to the Cordova project will make the `window.QRScanner` global object available once the `deviceready` event propagates. For apps not using `cordova-browser`, this plugin is also available as a simple javascript library.
 
-The iOS component of the plugin is written in Swift 2.3. To enable it, be sure you're running the lastest version of Xcode, then add the following hook and setting to the iOS platform in your Cordova app's `config.xml`:
+The library uses the [Universal Module Definition API](https://github.com/umdjs/umd), so it can simply be required by most build systems.
 
-```xml
-<platform name="ios">
-    <hook type="before_build" src="plugins/cordova-plugin-qrscanner/scripts/swift-support.js" />
-    <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
-      <string>The camera is used to read QR codes.</string>
-    </config-file>
-</platform>
+```js
+var QRScanner = require('QRScanner');
 ```
 
-The script requires the `xcode` npm module:
+Or alternatively, the library can be included in a page as-is, and the QRScanner will be made available at `window.QRScanner`.
 
-```bash
-npm install --save xcode
+```html
+<script src="path/to/qrscanner/library.bundle.min.js"></script>
 ```
 
-Swift will now be enabled during your build, and the `QRScanner` plugin will be available in your app.
-
-Starting with iOS 10, the `NSCameraUsageDescription` string is also required to avoid a runtime exit. This field can be provided in a single language, localized using the `InfoPlist.strings` file, or simply left empty (`<string></string>`).
-
-#### Using multiple Cordova plugins written in Swift
-
-Because Cordova is written in Objective-C, Cordova plugins written in Swift [require a `bridging header` to interact with Cordova](https://developer.apple.com/library/ios/documentation/Swift/Conceptual/BuildingCocoaApps/MixandMatch.html).
-
-A project can only have one bridging header. If your app uses plugins other than `cordova-plugin-qrscanner` which are also written in Swift, you will need to create a master bridging header to import each. Create a new bridging header and import each of the plugins' bridging headers, for example:
-
-```c
-//  MyProject-Bridging-Header.h
-//  Use this file to import your target's public headers that you would like to expose to Swift.
-
-//cordova-plugin-apple-watch
-#import "Watch-Bridge.h"
-
-//com.eface2face.iosrtc
-#import "iosrtc-Bridging-Header.h"
-
-//cordova-plugin-qrscanner
-#import "QRScanner-Bridging-Header.h"
-```
-Copy the script from `cordova-plugin-qrscanner/scripts/swift-support.js` into your project (eg. into the `hooks` folder), and modify the `BRIDGING_HEADER_END` variable to point to your new bridging header. Finally, remove and re-add the ios platform to trigger the hook. See [this issue](https://github.com/eface2face/cordova-plugin-iosrtc/issues/9) for more information.
+On the browser platform, performance is improved by running the processing-intensive scanning operation in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API). For more information about the browser platform, see [Browser Platform Specific Details](#browser).
 
 ## API
-With the exception of `QRScanner.scan(callback)`, all callbacks are optional.
+With the exception of `QRScanner.scan(callback)` and `QRScanner.getStatus(callback)`, all callbacks are optional.
 
 ### Prepare
 
@@ -240,6 +212,17 @@ QRScanner.useBackCamera(function(err, status){
 });
 ```
 
+Camera selection can also be done directly with the `useCamera` method.
+
+```js
+var back = 0; // default camera on plugin initialization
+var front = 1;
+QRScanner.useCamera(front, function(err, status){
+  err && console.error(err);
+  console.log(status);
+});
+```
+
 Switch video capture to the device's back camera.
 
 ### Video Preview Control
@@ -307,7 +290,7 @@ Retrieve the status of QRScanner and provide it to the callback function.
 Name                             | Description
 :------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 `authorized`                     | On iOS and Android 6.0+, camera access is granted at runtime by the user (by clicking "Allow" at the dialog). The `authorized` property is a boolean value which is true only when the user has allowed camera access to your app (`AVAuthorizationStatus.Authorized`). On platforms with permissions granted at install (Android pre-6.0, Windows Phone) this property is always true.
-`denied`                         | A boolean value which is true if the user permenantly denied camera access to the app (`AVAuthorizationStatus.Denied`). Once denied, camera access can only be gained by requesting the user change their decision (consider offering a link to the setting via `openSettings()`).
+`denied`                         | A boolean value which is true if the user permanently denied camera access to the app (`AVAuthorizationStatus.Denied`). Once denied, camera access can only be gained by requesting the user change their decision (consider offering a link to the setting via `openSettings()`).
 `restricted`                     | A boolean value which is true if the user is unable to grant permissions due to parental controls, organization security configuration profiles, or similar reasons.
 `prepared`                       | A boolean value which is true if QRScanner is prepared to capture video and render it to the view.
 `showing`                        | A boolean value which is true when the preview layer is visible (and on all platforms but `browser`, the native webview background is transparent).
@@ -316,7 +299,7 @@ Name                             | Description
 `lightEnabled`                   | A boolean value which is true if the light is enabled.
 `canOpenSettings`                | A boolean value which is true only if the users' operating system is able to `QRScanner.openSettings()`.
 `canEnableLight`                 | A boolean value which is true only if the users' device can enable a light in the direction of the currentCamera.
-`canChangeCamera`                | A boolean value which is true only if the current device "should" have a front camera. The camera may still not be capturable, which would emit error code 3, 4, or 5 when the switch is attempted.
+`canChangeCamera`                | A boolean value which is true only if the current device "should" have a front camera. The camera may still not be capturable, which would emit error code 3, 4, or 5 when the switch is attempted. (On the browser platform, this value is false until the `prepare` method is called.)
 `currentCamera`                  | A number representing the index of the currentCamera. `0` is the back camera, `1` is the front.
 
 
@@ -406,7 +389,7 @@ For this same reason, scanning requires the video preview to be active, and the 
 
 ### Camera Selection
 
-The browser platform attempts to select the best camera as the "back" camera (the default camera). If a "next-best" camera is available, that camera will be selected as the "front" camera. Camera switching is intended to be "togglable", so this plugin has no plans to support access to more than 2 cameras.
+When the `prepare` method runs, the browser platform attempts to select the best camera as the "back" camera (the default camera). If a "next-best" camera is available, that camera will be selected as the "front" camera. Camera switching is intended to be "togglable", so this plugin has no plans to support access to more than 2 cameras.
 
 The "back" camera is selected by the following criteria:
 1. [**facingMode**](http://w3c.github.io/mediacapture-main/#dfn-facingmode) – if a camera with a facingMode of `environment` exists, we use this one.
@@ -419,12 +402,6 @@ If more cameras are available, the "front" camera is then chosen from the highes
 The browser platform always returns the boolean `status.canEnableLight` as `false`, and the enableLight/disableLight methods throw the `LIGHT_UNAVAILABLE` error code.
 
 `status.canEnableLight` is camera specific, meaning it will return `false` if the camera in use does not have a flash.
-
-### Using with Electron or NW.js
-
-This plugin should work out-of-the box with the Cordova browser platform. As of now, there is no clear "best-way" of using the cordova browser build inside an Electron or NW.js application. This plugin attempts to provide an as-clean-as-possible source such that implementations can choose to either:
- - fully implement the cordova platform (please [let us know](https://github.com/bitpay/cordova-plugin-qrscanner/issues/new) how you do it so we can add documentation!), or
- - import this plugin's source into the Electron or NW.js project and re-bundle it manually.
 
 #### Using Status.authorized
 
@@ -455,10 +432,14 @@ npm run gen-tests
 
 This will create a new cordova project in the `cordova-plugin-test-projects` directory next to this repo, install `cordova-plugin-qrscanner`, and configure the [Cordova Plugin Test Framework](https://github.com/apache/cordova-plugin-test-framework). Once the platform tests are generated, the following commands are available:
 
-- `npm run test:ios`
-- `npm run test:browser`
 - `npm run test:android`
+- `npm run test:browser`
+- `npm run test:ios`
 
 Both Automatic Tests (via Cordova Plugin Test Framework's built-in [Jasmine](https://github.com/jasmine/jasmine)) and Manual Tests are available. Automatic tests confirm the existence and expected structure of the javascript API, and manual tests should be used to confirm functionality on each platform.
+
+The manual tests for the library are available without the cordova test project:
+
+- `npm run test:library`
 
 The build for this repo currently only confirms javascript style and syntax with [jshint](https://github.com/jshint/jshint). Pull requests with additional automated test methods are welcome!

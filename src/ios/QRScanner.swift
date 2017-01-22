@@ -16,6 +16,7 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
 
     var scanning: Bool = false
     var scanned: Bool = false
+    var paused: Bool = false // from upstream
     var nextScanningCommand: CDVInvokedUrlCommand?
 
     enum QRScannerError: Int32 {
@@ -44,7 +45,7 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
         super.pluginInitialize()
         NotificationCenter.default.addObserver(self, selector: #selector(pageDidLoad), name: NSNotification.Name.CDVPageDidLoad, object: nil)
         self.cameraView = UIView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height))
-        
+
         self.cornersLayer = RSCornersLayer()
         self.cornersLayer.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
     }
@@ -208,7 +209,7 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
         }
 
         cornersLayer.cornersArray = cornersArray
-        
+
         if (!barcodeObjects.isEmpty) {
             let found = barcodeObjects[0]
             if found.type == AVMetadataObjectTypeQRCode && found.stringValue != nil  && scanned == false {
@@ -277,11 +278,19 @@ class QRScanner : CDVPlugin, AVCaptureMetadataOutputObjectsDelegate {
     }
 
     func pausePreview(_ command: CDVInvokedUrlCommand) {
+        // if(scanning){ // from upstream
+        //     paused = true;
+        //     scanning = false;
+        // }
         captureVideoPreviewLayer?.connection.isEnabled = false
         self.getStatus(command)
     }
 
     func resumePreview(_ command: CDVInvokedUrlCommand) {
+        // if(paused){ // from upstream
+        //     paused = false;
+        //     scanning = true;
+        // }
         captureVideoPreviewLayer?.connection.isEnabled = true
         self.getStatus(command)
     }
