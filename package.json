@@ -8,6 +8,7 @@
       "ios"
     ]
   },
+  "main": "dist/cordova-plugin-qrscanner-lib.min.js",
   "scripts": {
     "build": "gulp && npm run clean-build",
     "clean-build": "trash dist/plugin.min.js && trash dist/www.min.js && trash src/browser/worker.min.js",
